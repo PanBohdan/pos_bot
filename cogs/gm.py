@@ -9,7 +9,7 @@ from discord import app_commands
 from misc import chunker
 from pymongo import MongoClient
 import os
-from bd_clases import User, Location, Event
+from db_clases import User, Location, Event
 from misc import set_locale_autocomplete, get_location_autocomplete
 
 
@@ -118,7 +118,7 @@ class GM(commands.GroupCog, name="gm"):
             pass
         await i.response.send_message(get_localized_answer('generic_error', user.get_localization()))
 
-    @app_commands.command(description='set_event_location_description')
+    @app_commands.command(description='set_event_weight_description')
     @app_commands.autocomplete(event_id=get_location_autocomplete)
     async def set_event_weight(self, i: discord.Interaction, event_id: str, weight: float):
         user = User(i.user.id, i.guild_id)

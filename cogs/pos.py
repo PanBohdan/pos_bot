@@ -7,7 +7,7 @@ import os
 from typing import List
 from discord import SelectOption
 from discord.ui import Select, View, Button, Modal, TextInput
-from bd_clases import User, Location, Event
+from db_clases import User, Location, Event
 from placeholders import move_url_placeholder
 import random
 
