@@ -44,9 +44,13 @@ class Translation(Translator):
 
 @client.event
 async def on_ready():
-    # await client.tree.set_translator(Translation())
+    await client.tree.set_translator(Translation())
     for cog in list_of_full_cog_path:
-        await client.load_extension(cog)
+        try:
+            await client.load_extension(cog)
+        except discord.ext.commands.ExtensionAlreadyLoaded:
+            await client.reload_extension(cog)
+
     if not client.synced:
         await client.tree.sync()
         client.synced = True
