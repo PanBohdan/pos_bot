@@ -69,12 +69,14 @@ class GM(commands.GroupCog, name="gm"):
 
     @app_commands.command(description='create_event_description')
     async def create_event(self, i: discord.Interaction, event: str, location: discord.Role = None, weight: float = 1.,
-                           locale: str = 'default'):
+                           image: discord.Attachment = None, locale: str = 'default'):
         user = User(i.user.id, i.guild_id)
+        if image:
+            image = image.url
         if location:
-            ev = Event(i.guild_id, weight, location.id)
+            ev = Event(i.guild_id, weight, location.id, image)
         else:
-            ev = Event(i.guild_id, weight)
+            ev = Event(i.guild_id, weight, url=image)
 
         ev_read = ev.roc_event()
         ev.edit_event(ev_read['_id'], event, locale)
@@ -137,6 +139,22 @@ class GM(commands.GroupCog, name="gm"):
                     ev.edit_event(event['_id'], event_str, localization)
                     await i.response.send_message(get_localized_answer('set_event', user.get_localization()))
                     return
+        except bson.errors.InvalidId:
+            pass
+        await i.response.send_message(get_localized_answer('generic_error', user.get_localization()))
+
+    @app_commands.command(description='set_event_url_description')
+    @app_commands.autocomplete(event_id=get_location_autocomplete)
+    async def set_event_url(self, i: discord.Interaction, event_id: str, image: discord.Attachment = None):
+        user = User(i.user.id, i.guild_id)
+        ev = Event(i.guild_id)
+        try:
+            if event := events.find_one({'_id': bson.ObjectId(event_id)}):
+                if image:
+                    ev.change_event_url(event['_id'], image.url)
+                else:
+                    ev.change_event_url(event['_id'], image)
+
         except bson.errors.InvalidId:
             pass
         await i.response.send_message(get_localized_answer('generic_error', user.get_localization()))

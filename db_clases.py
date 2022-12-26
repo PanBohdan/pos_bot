@@ -98,10 +98,11 @@ class Location:
 
 
 class Event:
-    def __init__(self, guild_id, weight=1., location_id=None):
+    def __init__(self, guild_id, weight=1., location_id=None, url=None):
         self.location_id = location_id
         self.guild_id = guild_id
         self.weight = weight
+        self.url = url
 
     def roc_event(self, e_id=None):
         if event := events.find_one({'_id': e_id, 'guild_id': self.guild_id}):
@@ -111,7 +112,8 @@ class Event:
                 'location_id': self.location_id,
                 'guild_id': self.guild_id,
                 'localized_events': {},
-                'statistical_weight': self.weight
+                'statistical_weight': self.weight,
+                'url': self.url
             })
             return events.find_one({'_id': doc.inserted_id, 'guild_id': self.guild_id})
 
@@ -129,3 +131,7 @@ class Event:
 
     def change_event_weight(self, e_id):
         events.update_one({'_id': e_id, 'guild_id': self.guild_id}, {"$set": {'statistical_weight': self.weight}})
+
+    def change_event_url(self, e_id, url):
+        events.update_one({'_id': e_id, 'guild_id': self.guild_id}, {"$set": {'url': url}})
+
