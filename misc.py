@@ -3,11 +3,12 @@ from discord.app_commands import Choice
 import os
 from pymongo import MongoClient
 from typing import List
+import random
+
 m_client = MongoClient(os.environ.get('DB'))
 db = m_client['pos_db']
 languages = db['languages']
 events = db['events']
-import random
 
 
 async def set_locale_autocomplete(interaction: discord.Interaction, current: str, ) -> List[Choice[str]]:
@@ -56,6 +57,7 @@ def procces_event(inp_str: str) -> object:
         return inp_str
     except ValueError as exc:
         return exc
+
 
 def chunker(inp_str):
     chunks = []

@@ -152,8 +152,6 @@ class PoS(commands.GroupCog, name="pos"):
                 embed.add_field(name=get_localized_answer('now_on_location', user.get_localization()).format(selected_location[0].name),
                                 value=desc)
                 embed.set_image(url=Location(selected_location[0].id, i.guild_id).roc_location().get('url', move_url_placeholder))
-
-
                 await i.response.send_message(embed=embed, view=view_location)
             else:
                 await i.response.send_message(content=get_localized_answer('select_location', user.get_localization()),

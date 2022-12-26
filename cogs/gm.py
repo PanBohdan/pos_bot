@@ -10,7 +10,7 @@ from misc import chunker
 from pymongo import MongoClient
 import os
 from db_clases import User, Location, Event
-from misc import set_locale_autocomplete, get_location_autocomplete
+from misc import set_locale_autocomplete, get_location_autocomplete, procces_event
 
 
 m_client = MongoClient(os.environ.get('DB'))
@@ -31,12 +31,6 @@ def get_localized_answer(request, locale):
 class GM(commands.GroupCog, name="gm"):
     def __init__(self, client):
         self.client = client
-        self.ctx_menu = app_commands.ContextMenu(
-            name='Cool Command Name',
-            callback=self.my_cool_context_menu,
-        )
-        self.client.tree.add_command(self.ctx_menu)
-
         super().__init__()
 
     @app_commands.command(description='set_image_location_description')
@@ -165,9 +159,18 @@ class GM(commands.GroupCog, name="gm"):
             else:
                 await i.followup.send(x)
 
-    @app_commands.checks.has_permissions(ban_members=True)
-    async def my_cool_context_menu(self, interaction: discord.Interaction, message: discord.Message) -> None:
-        pass
+    @app_commands.command(description='test_event_description')
+    async def test_event(self, i: discord.Interaction, event: str, num_of_times: int = 1):
+        output_str = ''
+        for x in range(0, num_of_times):
+            output_str += procces_event(event)
+            output_str += '\n'
+        chunks = chunker(output_str)
+        for n, x in enumerate(chunks):
+            if n == 0:
+                await i.response.send_message(x)
+            else:
+                await i.followup.send(x)
 
 
 async def setup(client):
