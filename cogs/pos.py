@@ -127,9 +127,12 @@ class PoS(commands.GroupCog, name="pos"):
                             event_list = []
                             weight_list = []
                             localize = user.get_localization()
-                            update_events_and_weights(events.find({'location_id': None}), localize, event_list, weight_list)
                             update_events_and_weights(events.find({'location_id': last_location.id}), localize, event_list, weight_list)
                             update_events_and_weights(events.find({'location_id': int(select_location.values[0])}), localize, event_list, weight_list)
+                            if not event_list:
+                                update_events_and_weights(events.find({'location_id': None}), localize, event_list,
+                                                          weight_list)
+
                             event = random.choices(event_list, cum_weights=weight_list)[0]
                             emb = discord.Embed()
                             emb.add_field(name=f'{get_localized_answer("location", user.get_localization())}',
