@@ -143,9 +143,9 @@ class GM(commands.GroupCog, name="gm"):
             pass
         await i.response.send_message(get_localized_answer('generic_error', user.get_localization()))
 
-    @app_commands.command(description='set_event_url_description')
+    @app_commands.command(description='set_event_image_description')
     @app_commands.autocomplete(event_id=get_location_autocomplete)
-    async def set_event_url(self, i: discord.Interaction, event_id: str, image: discord.Attachment = None):
+    async def set_event_image(self, i: discord.Interaction, event_id: str, image: discord.Attachment = None):
         user = User(i.user.id, i.guild_id)
         ev = Event(i.guild_id)
         try:
