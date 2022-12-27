@@ -160,8 +160,14 @@ class GM(commands.GroupCog, name="gm"):
         await i.response.send_message(get_localized_answer('generic_error', user.get_localization()))
 
     @app_commands.command(description='get_events_description')
-    async def get_events(self, i: discord.Interaction):
-        eves = [x for x in events.find({'guild_id': i.guild_id})]
+    async def get_events(self, i: discord.Interaction, role: discord.Role = None):
+        user = User(i.user.id, i.guild_id)
+
+        if role:
+            eves = [x for x in events.find({'guild_id': i.guild_id, 'location_id': role.id})]
+        else:
+            eves = [x for x in events.find({'guild_id': i.guild_id, 'location_id': role})]
+
         not_chunked_text = ''
         for x in eves:
             if x['location_id']:
@@ -171,11 +177,14 @@ class GM(commands.GroupCog, name="gm"):
             not_chunked_text += f"{str(x['_id']), role} w={x['statistical_weight']}: " \
                                 f"{x['localized_events']}\n "
         chunks = chunker(not_chunked_text)
-        for n, x in enumerate(chunks):
-            if n == 0:
-                await i.response.send_message(x)
-            else:
-                await i.followup.send(x)
+        if chunks:
+            for n, x in enumerate(chunks):
+                if n == 0:
+                    await i.response.send_message(x)
+                else:
+                    await i.followup.send(x)
+        else:
+            await i.response.send_message(get_localized_answer('generic_error', user.get_localization()))
 
     @app_commands.command(description='test_event_description')
     async def test_event(self, i: discord.Interaction, event: str, num_of_times: int = 1):

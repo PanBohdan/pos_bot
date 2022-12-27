@@ -57,6 +57,12 @@ class PoS(commands.GroupCog, name="pos"):
             return inte.user.id == i.user.id
 
         user = User(i.user.id, i.guild.id)
+        localize = user.get_localization()
+        now_on_location_answer = get_localized_answer('now_on_location', localize)
+        select_location_to_move = get_localized_answer('select_location_to_move', localize)
+        move_location_answer = get_localized_answer('move_location', localize)
+        location_answer = get_localized_answer("location", localize)
+
         locs = []
         for loc in locations.find():
             if role := i.user.get_role(loc['id']):
@@ -78,11 +84,11 @@ class PoS(commands.GroupCog, name="pos"):
                 view_location.remove_item(select_location)
                 select_location.options = new_opts
                 view_location.add_item(select_location)
-                embed = discord.Embed(title=get_localized_answer('select_location_to_move', user.get_localization()))
+                embed = discord.Embed(title=select_location_to_move)
                 desc = '. . .'
                 if dsc_col := Location(selected_location[0].id, inter.guild_id).roc_location().get('description'):
-                    desc = dsc_col.get(user.get_localization(), dsc_col['default'])
-                embed.add_field(name=get_localized_answer('now_on_location', user.get_localization()).format(inter.guild.get_role(selected_location[0].id)), value=desc)
+                    desc = dsc_col.get(localize, dsc_col['default'])
+                embed.add_field(name=now_on_location_answer.format(inter.guild.get_role(selected_location[0].id)), value=desc)
                 embed.set_image(url=Location(selected_location[0].id, i.guild_id).roc_location().get('url', move_url_placeholder))
 
                 await inter.response.edit_message(embed=embed, view=view_location)
@@ -105,28 +111,25 @@ class PoS(commands.GroupCog, name="pos"):
                 selected_location[0] = inter.guild.get_role(int(select_location.values[0]))
                 select_location.options = new_opts
                 view_location.add_item(select_location)
-                embed = discord.Embed(title=get_localized_answer('select_location_to_move', user.get_localization()))
+                embed = discord.Embed(title=select_location_to_move)
                 desc = '. . .'
                 if dsc_col := Location(int(select_location.values[0]), inter.guild_id).roc_location().get('description'):
-                    desc = dsc_col.get(user.get_localization(), dsc_col['default'])
-                embed.add_field(name=get_localized_answer('now_on_location', user.get_localization()).format(inter.guild.get_role(selected_location[0].id)),
+                    desc = dsc_col.get(localize, dsc_col['default'])
+                embed.add_field(name=now_on_location_answer.format(inter.guild.get_role(selected_location[0].id)),
                                 value=desc)
                 embed.set_image(url=Location(int(select_location.values[0]), i.guild_id).roc_location().get('url', move_url_placeholder))
 
                 await inter.response.edit_message(view=view_location, embed=embed)
-                await i.followup.send(get_localized_answer('move_location',
-                                                           user.get_localization()).format(inter.user.mention,
-                                                                                           last_location.name,
-                                                                                           inter.guild.get_role(int(
-                                                                                               select_location.values[
-                                                                                                   0])).name))
+                await i.followup.send(move_location_answer.format(inter.user.mention,
+                                                                  last_location.name,
+                                                                  inter.guild.get_role(
+                                                                      int(select_location.values[0])).name))
                 for r in roles.find({'movement_number': True}).sort('chance', -1):
                     if i.user.get_role(r['id']):
                         num = random.randint(1, 100)
                         if r['chance'] >= num:
                             event_list = []
                             weight_list = []
-                            localize = user.get_localization()
                             update_events_and_weights(events.find({'location_id': last_location.id}), localize, event_list, weight_list)
                             update_events_and_weights(events.find({'location_id': int(select_location.values[0])}), localize, event_list, weight_list)
                             if not event_list:
@@ -135,7 +138,7 @@ class PoS(commands.GroupCog, name="pos"):
 
                             event = random.choices(event_list, cum_weights=weight_list)[0]
                             emb = discord.Embed()
-                            emb.add_field(name=f'{get_localized_answer("location", user.get_localization())}',
+                            emb.add_field(name=f'{location_answer}',
                                           value=procces_event(event[0]))
                             if url := event[1]:
                                 emb.set_image(url=url)
@@ -151,20 +154,20 @@ class PoS(commands.GroupCog, name="pos"):
             select_location.callback = select_location_callback
             view_location.add_item(select_location)
             if not need_selection:
-                embed = discord.Embed(title=get_localized_answer('select_location_to_move', user.get_localization()))
+                embed = discord.Embed(title=select_location_to_move)
                 desc = '. . .'
                 if dsc_col := Location(selected_location[0].id, i.guild_id).roc_location().get('description'):
-                    desc = dsc_col.get(user.get_localization(), dsc_col['default'])
+                    desc = dsc_col.get(localize, dsc_col['default'])
 
-                embed.add_field(name=get_localized_answer('now_on_location', user.get_localization()).format(selected_location[0].name),
+                embed.add_field(name=now_on_location_answer.format(selected_location[0].name),
                                 value=desc)
                 embed.set_image(url=Location(selected_location[0].id, i.guild_id).roc_location().get('url', move_url_placeholder))
                 await i.response.send_message(embed=embed, view=view_location)
             else:
-                await i.response.send_message(content=get_localized_answer('select_location', user.get_localization()),
+                await i.response.send_message(content=get_localized_answer('select_location', localize),
                                               view=starting_view)
         else:
-            await i.response.send_message(get_localized_answer('error_location', user.get_localization()))
+            await i.response.send_message(get_localized_answer('error_location', localize))
 
     @app_commands.command(description='get_locations_description')
     async def get_locations(self, i: discord.Interaction):
