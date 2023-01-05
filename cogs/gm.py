@@ -62,6 +62,12 @@ class GM(commands.GroupCog, name="gm"):
     @app_commands.command(description='connect_locations_description')
     async def connect(self, i: discord.Interaction, location_1: discord.Role, location_2: discord.Role):
         user = User(i.user.id, i.guild_id)
+        if location_1.permissions.administrator or location_2.permissions.administrator or\
+                location_1.permissions.manage_roles or location_2.permissions.manage_roles or\
+                location_1.permissions.kick_members or location_2.permissions.kick_members or\
+                location_1.permissions.ban_members or location_2.permissions.ban_members:
+            await i.response.send_message(content=get_localized_answer('link_location_error', user.get_localization()))
+            return
         loc = Location(location_1.id, i.guild_id)
         loc.attach_or_detach(location_2.id, i.guild.id)
         await i.response.send_message(content=get_localized_answer('link_location',
