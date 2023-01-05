@@ -103,23 +103,15 @@ class PoS(commands.GroupCog, name="pos"):
             async def select_location_callback(inter: discord.Interaction):
                 await inter.user.add_roles(inter.guild.get_role(int(select_location.values[0])))
                 await inter.user.remove_roles(inter.guild.get_role(selected_location[0].id))
-                view_location.remove_item(select_location)
-                new_opts = [SelectOption(label=inter.guild.get_role(y).name, value=y)
-                            for y in Location(int(select_location.values[0]),
-                                              inter.guild_id).roc_location()['attached_locations']]
                 last_location = inter.guild.get_role(selected_location[0].id)
-                selected_location[0] = inter.guild.get_role(int(select_location.values[0]))
-                select_location.options = new_opts
-                view_location.add_item(select_location)
-                embed = discord.Embed(title=select_location_to_move)
                 desc = '. . .'
                 if dsc_col := Location(int(select_location.values[0]), inter.guild_id).roc_location().get('description'):
                     desc = dsc_col.get(localize, dsc_col['default'])
-                embed.add_field(name=now_on_location_answer.format(inter.guild.get_role(selected_location[0].id)),
-                                value=desc)
+                embed = discord.Embed(title=now_on_location_answer.format(inter.guild.get_role(selected_location[0].id)),
+                                      description=desc)
                 embed.set_image(url=Location(int(select_location.values[0]), i.guild_id).roc_location().get('url', move_url_placeholder))
 
-                await inter.response.edit_message(view=view_location, embed=embed)
+                await inter.response.edit_message(view=None, embed=embed)
                 await i.followup.send(move_location_answer.format(inter.user.mention,
                                                                   last_location.name,
                                                                   inter.guild.get_role(
@@ -174,9 +166,13 @@ class PoS(commands.GroupCog, name="pos"):
         locs = [x for x in locations.find({'guild_id': i.guild_id})]
         not_chunked_text = ''
         for x in locs:
-            not_chunked_text += f"{i.guild.get_role(x['id']).name} : " \
-                                f"{[i.guild.get_role(y).name for y in x['attached_locations']]}\n"
-        chunks = chunker(not_chunked_text)
+            not_chunked_text += f"```css\n#{i.guild.get_role(x['id']).name}:\n"
+            for n, sub_loc in enumerate(x['attached_locations']):
+                not_chunked_text += f"- {i.guild.get_role(sub_loc).name}"
+                if n != len(x['attached_locations'])-1:
+                    not_chunked_text += '\n'
+            not_chunked_text += f' ```'
+        chunks = chunker(not_chunked_text, ' ```')
         for n, x in enumerate(chunks):
             if n == 0:
                 await i.response.send_message(x)
