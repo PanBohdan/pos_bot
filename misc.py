@@ -39,6 +39,8 @@ def procces_event(inp_str: str) -> object:
                 inp_str = inp_str.replace(sub_str, str(random.randint(x, y)))
             elif var == 'rand_list':
                 list_of_values = split_str[1].split(',')
+                for n, value in enumerate(list_of_values):
+                    list_of_values[n] = value.lstrip().rstrip()
                 inp_str = inp_str.replace(sub_str, random.choice(list_of_values))
             elif var == 'rand_w_list':
                 list_of_values = split_str[1].split(',')
@@ -46,6 +48,7 @@ def procces_event(inp_str: str) -> object:
                 weights = []
                 for val in list_of_values:
                     val = val.split('|')
+                    val[0] = val[0].lstrip().rstrip()
                     values.append(val[0])
                     weights.append(float(val[1]))
                 ch = random.choices(values, cum_weights=weights)
