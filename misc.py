@@ -32,7 +32,7 @@ def procces_event(inp_str: str) -> object:
         if inp_str.count('{') >= 1 and inp_str.count('}') >= 1:
             sub_str = inp_str[inp_str.index("{") + 1:inp_str.index("}")]
             split_str = sub_str.split('=')
-            var = split_str[0].lower().replace(' ', '')
+            var = split_str[0].lower().replace(' ', '').lstrip().rstrip()
             if var == 'rand_num':
                 x, y = split_str[1].split('|')
                 x, y = int(x.replace(' ', '')), int(y.replace(' ', ''))
