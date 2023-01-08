@@ -1,18 +1,12 @@
 import bson
-import pymongo.database
-
 import discord.ext.commands
 from discord.ext import commands
-from discord.app_commands import Choice
-from typing import List
 from discord import app_commands
 from misc import chunker
 from pymongo import MongoClient
 import os
 from db_clases import User, Location, Event
 from misc import set_locale_autocomplete, get_location_autocomplete, procces_event
-
-
 m_client = MongoClient(os.environ.get('DB'))
 db = m_client['pos_db']
 local = db['localized_text']
@@ -38,8 +32,11 @@ class GM(commands.GroupCog, name="gm"):
 
         user = User(i.user.id, i.guild.id)
         loc = Location(role.id, i.guild_id)
-        loc.update_image(image.url)
-        await i.response.send_message(content=get_localized_answer('set_image_location', user.get_localization()))
+        await i.response.send_message(content=get_localized_answer('set_image_location', user.get_localization()),
+                                      file=await image.to_file())
+        mes: discord.InteractionMessage = await i.original_response()
+        loc.update_image(mes.attachments[0].proxy_url)
+
 
     @app_commands.command(description='set_location_desc_description')
     @app_commands.autocomplete(localization=set_locale_autocomplete)
@@ -78,7 +75,14 @@ class GM(commands.GroupCog, name="gm"):
                            image: discord.Attachment = None, locale: str = 'default'):
         user = User(i.user.id, i.guild_id)
         if image:
-            image = image.url
+            await i.response.send_message(content=get_localized_answer('create_event', user.get_localization()),
+                                          file=await image.to_file())
+            mes: discord.InteractionMessage = await i.original_response()
+            image = mes.attachments[0].proxy_url
+
+        else:
+            await i.response.send_message(get_localized_answer('create_event', user.get_localization()))
+
         if location:
             ev = Event(i.guild_id, weight, location.id, image)
         else:
@@ -86,7 +90,6 @@ class GM(commands.GroupCog, name="gm"):
 
         ev_read = ev.roc_event()
         ev.edit_event(ev_read['_id'], event, locale)
-        await i.response.send_message(get_localized_answer('create_event', user.get_localization()))
 
     @app_commands.command(description='delete_event_description')
     @app_commands.autocomplete(event_id=get_location_autocomplete)
@@ -157,9 +160,12 @@ class GM(commands.GroupCog, name="gm"):
         try:
             if event := events.find_one({'_id': bson.ObjectId(event_id)}):
                 if image:
-                    ev.change_event_url(event['_id'], image.url)
-                else:
+                    await i.response.send_message(content=get_localized_answer('set_event_image', user.get_localization()),
+                                                  file=await image.to_file())
+                    mes: discord.InteractionMessage = await i.original_response()
+                    image = mes.attachments[0].proxy_url
                     ev.change_event_url(event['_id'], image)
+                    return
 
         except bson.errors.InvalidId:
             pass

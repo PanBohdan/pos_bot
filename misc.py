@@ -27,21 +27,23 @@ async def get_location_autocomplete(interaction: discord.Interaction, current: s
     ]
 
 
+
 def procces_event(inp_str: str) -> object:
     try:
         if inp_str.count('{') >= 1 and inp_str.count('}') >= 1:
-            sub_str = inp_str[inp_str.index("{") + 1:inp_str.index("}")]
+            sub_str = inp_str[inp_str.rindex("{") + 1:inp_str.rindex("}")]
             split_str = sub_str.split('=')
             var = split_str[0].lower().replace(' ', '').lstrip().rstrip()
             if var == 'rand_num':
                 x, y = split_str[1].split('|')
                 x, y = int(x.replace(' ', '')), int(y.replace(' ', ''))
-                inp_str = inp_str.replace(sub_str, str(random.randint(x, y)))
+                inp_str = inp_str[:inp_str.rindex("{")] + str(random.randint(x, y)) + inp_str[inp_str.rindex("}")+1:]
+
             elif var == 'rand_list':
                 list_of_values = split_str[1].split(',')
                 for n, value in enumerate(list_of_values):
                     list_of_values[n] = value.lstrip().rstrip()
-                inp_str = inp_str.replace(sub_str, random.choice(list_of_values))
+                inp_str = inp_str[:inp_str.rindex("{")] + random.choice(list_of_values) + inp_str[inp_str.rindex("}")+1:]
             elif var == 'rand_w_list':
                 list_of_values = split_str[1].split(',')
                 values = []
@@ -51,11 +53,11 @@ def procces_event(inp_str: str) -> object:
                     val[0] = val[0].lstrip().rstrip()
                     values.append(val[0])
                     weights.append(float(val[1]))
-                ch = random.choices(values, cum_weights=weights)
-                inp_str = inp_str.replace(sub_str, str(ch[0]))
-
-            inp_str = inp_str[:inp_str.index("{")] + inp_str[inp_str.index("{") + 1:]
-            inp_str = inp_str[:inp_str.index("}")] + inp_str[inp_str.index("}") + 1:]
+                if round(sum(weights)) == 1:
+                    ch = random.choices(values, weights=weights)
+                else:
+                    ch = random.choices(values, cum_weights=weights)
+                inp_str = inp_str[:inp_str.rindex("{")] + ch[0] + inp_str[inp_str.rindex("}")+1:]
             return procces_event(inp_str)
         return inp_str
     except ValueError as exc:

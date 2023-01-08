@@ -22,9 +22,10 @@ roles = db['roles']
 events = db['events']
 
 
+
 def update_events_and_weights(event_list, localization, fin_eve_list, weight_list):
     for x in event_list:
-        fin_eve_list.append((x['localized_events'].get(localization, x['localized_events']['default']), x.get('url', None)))
+        fin_eve_list.append((x['localized_events'].get(localization, x['localized_events']['default']), x.get('url', None), x.get('location_id', None)))
         weight_list.append(x['statistical_weight'])
 
 
@@ -129,8 +130,16 @@ class PoS(commands.GroupCog, name="pos"):
                                                           weight_list)
 
                             event = random.choices(event_list, cum_weights=weight_list)[0]
+                            if event[2]:
+                                loc_text = f"({i.guild.get_role(event[2]).name})"
+                            else:
+                                if not events.find({'location_id': last_location.id}):
+                                    loc_text = f"({last_location.name})"
+                                else:
+                                    loc_text = f"({inter.guild.get_role(int(select_location.values[0])).name})"
+
                             emb = discord.Embed()
-                            emb.add_field(name=f'{location_answer}',
+                            emb.add_field(name=f'{loc_text} {location_answer}',
                                           value=procces_event(event[0]))
                             if url := event[1]:
                                 emb.set_image(url=url)

@@ -153,3 +153,4 @@ cython_debug/
 
 secret.py
 /playground/
+credentials.json
