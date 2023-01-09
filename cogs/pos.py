@@ -141,7 +141,7 @@ class PoS(commands.GroupCog, name="pos"):
                                           value=procces_event(event[0]))
                             if url := event[1]:
                                 emb.set_image(url=url)
-                            await i.followup.send(embed=emb)
+                            await i.followup.send(content=f'{inter.user.mention}', embed=emb)
                         break
 
             select_location_opts = [SelectOption(label=i.guild.get_role(x).name, value=x)
