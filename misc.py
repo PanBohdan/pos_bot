@@ -53,10 +53,7 @@ def procces_event(inp_str: str) -> object:
                     val[0] = val[0].lstrip().rstrip()
                     values.append(val[0])
                     weights.append(float(val[1]))
-                if round(sum(weights)) == 1:
-                    ch = random.choices(values, weights=weights)
-                else:
-                    ch = random.choices(values, cum_weights=weights)
+                ch = random.choices(values, weights=weights)
                 inp_str = inp_str[:inp_str.rindex("{")] + ch[0] + inp_str[inp_str.rindex("}")+1:]
             return procces_event(inp_str)
         return inp_str
