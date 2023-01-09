@@ -121,6 +121,8 @@ class PoS(commands.GroupCog, name="pos"):
                     if i.user.get_role(r['id']):
                         num = random.randint(1, 100)
                         if r['chance'] >= num:
+                            await i.user.add_roles(inter.guild.get_role(roles.find_one({'event_role': True})['id']))
+
                             event_list = []
                             weight_list = []
                             update_events_and_weights(events.find({'location_id': last_location.id}), localize, event_list, weight_list)
