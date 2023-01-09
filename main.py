@@ -44,7 +44,7 @@ class Translation(Translator):
 
 @client.event
 async def on_ready():
-    await client.tree.set_translator(Translation())
+    #await client.tree.set_translator(Translation())
     for cog in list_of_full_cog_path:
         try:
             await client.load_extension(cog)

@@ -126,8 +126,7 @@ class PoS(commands.GroupCog, name="pos"):
                             update_events_and_weights(events.find({'location_id': last_location.id}), localize, event_list, weight_list)
                             update_events_and_weights(events.find({'location_id': int(select_location.values[0])}), localize, event_list, weight_list)
                             update_events_and_weights(events.find({'location_id': None}), localize, event_list, weight_list)
-
-                            event = random.choices(event_list, cum_weights=weight_list)[0]
+                            event = random.choices(event_list, weights=weight_list)[0]
                             if event[2]:
                                 loc_text = f"({i.guild.get_role(event[2]).name})"
                             else:
