@@ -181,6 +181,7 @@ class GM(commands.GroupCog, name="gm"):
             eves = [x for x in events.find({'guild_id': i.guild_id, 'location_id': role})]
 
         not_chunked_text = ''
+        w = 0
         for x in eves:
             if x['location_id']:
                 role = i.guild.get_role(x['location_id']).name
@@ -188,6 +189,8 @@ class GM(commands.GroupCog, name="gm"):
                 role = x['location_id']
             not_chunked_text += f"{str(x['_id']), role} w={x['statistical_weight']}: " \
                                 f"{x['localized_events']}\n "
+            w += x['statistical_weight']
+        not_chunked_text += f"sum_weight = {w}"
         chunks = chunker(not_chunked_text)
         if chunks:
             for n, x in enumerate(chunks):
@@ -211,6 +214,17 @@ class GM(commands.GroupCog, name="gm"):
             else:
                 await i.followup.send(x)
 
+    @app_commands.command(description='get_event_image_description')
+    @app_commands.autocomplete(event_id=get_location_autocomplete)
+    async def get_event_image(self, i: discord.Interaction, event_id: str):
+        user = User(i.user.id, i.guild_id)
+        try:
+            if event := events.find_one({'_id': bson.ObjectId(event_id)}):
+                await i.response.send_message(content=f"{event['url']}")
+
+        except bson.errors.InvalidId:
+            pass
+        await i.response.send_message(get_localized_answer('generic_error', user.get_localization()))
 
 async def setup(client):
     await client.add_cog(GM(client))
