@@ -50,10 +50,11 @@ async def on_ready():
             await client.load_extension(cog)
         except discord.ext.commands.ExtensionAlreadyLoaded:
             await client.reload_extension(cog)
-
     if not client.synced:
         await client.tree.sync()
         client.synced = True
+    await client.wait_until_ready()
+
     print(f'Logged in as: {client.user.name}')
     print(f'With ID: {client.user.id}')
     print(f'Loaded cogs: {list(dict_of_cog_names_and_classes.keys())}')

@@ -108,7 +108,7 @@ class PoS(commands.GroupCog, name="pos"):
                 desc = '. . .'
                 if dsc_col := Location(int(select_location.values[0]), inter.guild_id).roc_location().get('description'):
                     desc = dsc_col.get(localize, dsc_col['default'])
-                embed = discord.Embed(title=now_on_location_answer.format(inter.guild.get_role(selected_location[0].id)),
+                embed = discord.Embed(title=now_on_location_answer.format(inter.guild.get_role(int(select_location.values[0]))),
                                       description=desc)
                 embed.set_image(url=Location(int(select_location.values[0]), i.guild_id).roc_location().get('url', move_url_placeholder))
 
