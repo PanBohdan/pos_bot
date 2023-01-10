@@ -6,20 +6,13 @@ from misc import chunker
 from pymongo import MongoClient
 import os
 from db_clases import User, Location, Event
-from misc import set_locale_autocomplete, get_location_autocomplete, procces_event
+from misc import set_locale_autocomplete, get_location_autocomplete, procces_event,get_localized_answer
 m_client = MongoClient(os.environ.get('DB'))
 db = m_client['pos_db']
-local = db['localized_text']
 users = db['users']
 servers = db['servers']
 languages = db['languages']
 events = db['events']
-
-
-def get_localized_answer(request, locale):
-    localized = local.find_one({'request': request})
-    if localized:
-        return localized['local'].get(locale, localized['local']['default'])
 
 
 class GM(commands.GroupCog, name="gm"):
@@ -36,7 +29,6 @@ class GM(commands.GroupCog, name="gm"):
                                       file=await image.to_file())
         mes: discord.InteractionMessage = await i.original_response()
         loc.update_image(mes.attachments[0].proxy_url)
-
 
     @app_commands.command(description='set_location_desc_description')
     @app_commands.autocomplete(localization=set_locale_autocomplete)
@@ -71,6 +63,7 @@ class GM(commands.GroupCog, name="gm"):
                                                                    user.get_localization()))
 
     @app_commands.command(description='create_event_description')
+    @app_commands.autocomplete(locale=set_locale_autocomplete)
     async def create_event(self, i: discord.Interaction, event: str, location: discord.Role = None, weight: float = 1.,
                            image: discord.Attachment = None, locale: str = 'default'):
         user = User(i.user.id, i.guild_id)
@@ -171,14 +164,15 @@ class GM(commands.GroupCog, name="gm"):
             pass
         await i.response.send_message(get_localized_answer('generic_error', user.get_localization()))
 
+    @app_commands.autocomplete(locale=set_locale_autocomplete)
     @app_commands.command(description='get_events_description')
-    async def get_events(self, i: discord.Interaction, role: discord.Role = None):
+    async def get_events(self, i: discord.Interaction, role: discord.Role = None, locale: str='default'):
         user = User(i.user.id, i.guild_id)
 
         if role:
-            eves = [x for x in events.find({'guild_id': i.guild_id, 'location_id': role.id})]
+            eves = [x for x in events.find({'guild_id': i.guild_id, 'location_id': role.id}).sort('statistical_weight')]
         else:
-            eves = [x for x in events.find({'guild_id': i.guild_id, 'location_id': role})]
+            eves = [x for x in events.find({'guild_id': i.guild_id, 'location_id': role}).sort('statistical_weight')]
 
         not_chunked_text = ''
         w = 0
@@ -187,8 +181,8 @@ class GM(commands.GroupCog, name="gm"):
                 role = i.guild.get_role(x['location_id']).name
             else:
                 role = x['location_id']
-            not_chunked_text += f"{str(x['_id']), role} w={x['statistical_weight']}: " \
-                                f"{x['localized_events']}\n "
+            not_chunked_text += f"id={str(x['_id'])}, role={role}, weight={x['statistical_weight']}: " \
+                                f"```{x['localized_events'].get(locale, x['localized_events']['default'])}```\n "
             w += x['statistical_weight']
         not_chunked_text += f"sum_weight = {w}"
         chunks = chunker(not_chunked_text)
@@ -216,7 +210,7 @@ class GM(commands.GroupCog, name="gm"):
 
     @app_commands.command(description='get_event_image_description')
     @app_commands.autocomplete(event_id=get_location_autocomplete)
-    async def get_event_image(self, i: discord.Interaction, event_id: str):
+    async def get_event_image(self, i: discord.Interaction, event_id: str, ):
         user = User(i.user.id, i.guild_id)
         try:
             if event := events.find_one({'_id': bson.ObjectId(event_id)}):

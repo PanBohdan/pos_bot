@@ -1,7 +1,7 @@
 import discord.ext.commands
 from discord.ext import commands
 from discord import app_commands
-from misc import set_locale_autocomplete, chunker, procces_event
+from misc import set_locale_autocomplete, chunker, procces_event, get_localized_answer, update_events_and_weights
 from pymongo import MongoClient
 import os
 from typing import List
@@ -20,19 +20,6 @@ languages = db['languages']
 locations = db['locations']
 roles = db['roles']
 events = db['events']
-
-
-
-def update_events_and_weights(event_list, localization, fin_eve_list, weight_list):
-    for x in event_list:
-        fin_eve_list.append((x['localized_events'].get(localization, x['localized_events']['default']), x.get('url', None), x.get('location_id', None)))
-        weight_list.append(x['statistical_weight'])
-
-
-def get_localized_answer(request, locale):
-    localized = local.find_one({'request': request})
-    if localized:
-        return localized['local'].get(locale, localized['local']['default'])
 
 
 class PoS(commands.GroupCog, name="pos"):
