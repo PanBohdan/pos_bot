@@ -9,6 +9,7 @@ m_client = MongoClient(os.environ.get('DB'))
 db = m_client['pos_db']
 languages = db['languages']
 events = db['events']
+local = db['localized_text']
 
 
 async def set_locale_autocomplete(interaction: discord.Interaction, current: str, ) -> List[Choice[str]]:
@@ -26,6 +27,17 @@ async def get_location_autocomplete(interaction: discord.Interaction, current: s
         for choice in choices if current in choice
     ]
 
+
+def update_events_and_weights(event_list, localization, fin_eve_list, weight_list):
+    for x in event_list:
+        fin_eve_list.append((x['localized_events'].get(localization, x['localized_events']['default']), x.get('url', None), x.get('location_id', None)))
+        weight_list.append(x['statistical_weight'])
+
+
+def get_localized_answer(request, locale):
+    localized = local.find_one({'request': request})
+    if localized:
+        return localized['local'].get(locale, localized['local']['default'])
 
 
 def procces_event(inp_str: str) -> object:
