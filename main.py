@@ -3,13 +3,15 @@ from discord.ext.commands import Bot
 import os
 from pymongo import MongoClient
 from discord.app_commands import Translator
+from cogs.pos import PoS
+from cogs.gm import GM
+from cogs.admin import Admin
 try:
     from secret import *
 except ImportError:
     pass
+
 intent = discord.Intents.all()
-from cogs.pos import PoS
-from cogs.gm import GM
 m_client = MongoClient(os.environ.get('DB'))
 db = m_client['pos_db']
 local = db['localized_commands']
@@ -21,7 +23,7 @@ prefix = '.'
 
 # Cogs setup
 cogs_dir = 'cogs'
-dict_of_cog_names_and_classes = {'pos': PoS, 'gm': GM}
+dict_of_cog_names_and_classes = {'pos': PoS, 'gm': GM, 'admin': Admin}
 list_of_full_cog_path = [f"{cogs_dir}.{cog}" for cog in dict_of_cog_names_and_classes.keys()]
 
 # Bot setup
@@ -32,18 +34,22 @@ client.synced = False
 class Translation(Translator):
     def __init__(self):
         super().__init__()
+        self.command = {}
+        for locale in local.find():
+            self.command[locale['command']] = locale['local']
 
     async def translate(self, locale_str, locale, context):
-        if localized := local.find_one({'command': str(locale_str)}):
-            if localized_fin := localized['local'].get(str(locale), None):
+        if localized := self.command.get(str(locale_str), None):
+            if localized_fin := localized.get(str(locale), None):
                 return localized_fin
-            elif localized_fin := localized['local'].get('default', None):
+            elif localized_fin := localized.get('default', None):
                 return localized_fin
         return None
 
 
 @client.event
 async def on_ready():
+    print(f'Translation in progress')
     await client.tree.set_translator(Translation())
     for cog in list_of_full_cog_path:
         try:
