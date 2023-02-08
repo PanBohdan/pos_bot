@@ -1,3 +1,8 @@
+try:
+    from secret import *
+except ImportError:
+    pass
+
 import discord
 from discord.ext.commands import Bot
 import os
@@ -6,10 +11,6 @@ from discord.app_commands import Translator
 from cogs.pos import PoS
 from cogs.gm import GM
 from cogs.admin import Admin
-try:
-    from secret import *
-except ImportError:
-    pass
 
 intent = discord.Intents.all()
 m_client = MongoClient(os.environ.get('DB'))
@@ -49,7 +50,6 @@ class Translation(Translator):
 
 @client.event
 async def on_ready():
-    print(f'Translation in progress')
     await client.tree.set_translator(Translation())
     for cog in list_of_full_cog_path:
         try:

@@ -178,12 +178,12 @@ class PoS(commands.GroupCog, name="pos"):
     @app_commands.command(description='manual_description')
     async def manual(self, i: discord.Interaction):
         user = User(i.user.id, i.guild.id)
-        await i.response.defer()
+        await i.response.defer(ephemeral=True)
         if url := Server(i.guild.id).roc_server().get('manual_url', None):
             v = ManualView(user.get_localization(), url)
-            await i.followup.send(content=v.get_content(), embed=v.get_embed(), view=v)
+            await i.followup.send(content=v.get_content(), embed=v.get_embed(), view=v, ephemeral=True)
         else:
-            await i.followup.send(content=get_localized_answer('generic_error', user.get_localization()))
+            await i.followup.send(content=get_localized_answer('generic_error', user.get_localization()), ephemeral=True)
 
 
 async def setup(client):

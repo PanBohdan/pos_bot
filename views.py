@@ -10,6 +10,14 @@ import gspread.utils
 client = gspread.service_account('credentials.json')
 
 
+async def followup_images(interaction, images, title=''):
+    if images:
+        for image in images:
+            temp_emb = discord.Embed(title=title)
+            temp_emb.set_image(url=image)
+            await interaction.followup.send(embed=temp_emb, ephemeral=True)
+
+
 class ManualSelect(Select):
     def __init__(self, initial_data):
         options = [SelectOption(label=name) for name, _ in initial_data]
@@ -20,9 +28,10 @@ class ManualSelect(Select):
         for key, value in self.view.data:
             emb.add_field(name=key, value=value[:100], inline=False)
         v = PaginatedBackView(self.view, emb, self.values[0], dict(self.view.data).get(self.values[0]))
-        new_emb = v.get_embed()
+        new_emb, images = v.get_embed()
 
         await interaction.response.edit_message(content=v.get_content(), view=v, embed=new_emb)
+        await followup_images(interaction, images, v.key)
 
     def update_options(self):
         self.view.data = self.view.get_localized_paginated_list()
@@ -99,32 +108,39 @@ class PaginatedBackView(View):
         self.key = key
         self.emb = emb
         self.page = 0
-        self.chunked = chunker(value, '\n', 1024)
+        self.chunked = chunker(value, '\n', 4096)
         self.add_item(BackBTN(get_localized_answer('back_btn_label', original_view.locale)))
         if len(self.chunked) > 1:
             self.add_item(PageChangeBTN(-1, len(self.chunked)-1, '<'))
             self.add_item(PageChangeBTN(1, len(self.chunked)-1, '>'))
 
     def get_embed(self):
-        new_emb = discord.Embed(title=self.key)
-        key_for_image = '{url='
-        if self.chunked[self.page].count(key_for_image) == 1 and self.chunked[self.page].count('}') == 1:
-            first_keyword = self.chunked[self.page].find(key_for_image)
-            second_keyword = self.chunked[self.page].find('}')
-            url = self.chunked[self.page][first_keyword+len(key_for_image):second_keyword]
-            self.chunked[self.page] = self.chunked[:first_keyword] + self.chunked[second_keyword+1:]
-            new_emb.set_image(url=url)
+        new_emb = discord.Embed(title=self.key, description='')
+        images = []
+        key_for_image = '{image_url='
+        for x in range(0, self.chunked[self.page].count(key_for_image)):
+            if self.chunked[self.page].count(key_for_image) >= 1 and self.chunked[self.page].count('}') >= 1:
+                first_keyword = self.chunked[self.page].index(key_for_image)
+                second_keyword = self.chunked[self.page].index('}')
+                url = self.chunked[self.page][first_keyword+len(key_for_image):second_keyword]
+                self.chunked[self.page] = self.chunked[self.page][:first_keyword] + self.chunked[self.page][second_keyword+1:]
+                images.append(url)
+        if images:
+            new_emb.set_image(url=images.pop(0))
+
         if self.chunked[self.page]:
-            new_emb.add_field(name='', value=self.chunked[self.page])
-        return new_emb
+            new_emb.description = self.chunked[self.page]
+        return new_emb, images
 
     def get_content(self):
         if len(self.chunked) > 1:
             return f'{self.page+1}/{len(self.chunked)}'
         return ''
 
-    async def change_page(self, i: Interaction):
-        await i.response.edit_message(content=self.get_content(), embed=self.get_embed())
+    async def change_page(self, interaction: Interaction):
+        embed, images = self.get_embed()
+        await interaction.response.edit_message(content=self.get_content(), embed=embed)
+        await followup_images(interaction, images, self.key)
 
 
 class BackBTN(Button):
