@@ -195,6 +195,39 @@ class GM(commands.GroupCog, name="gm"):
         else:
             await i.response.send_message(get_localized_answer('generic_error', user.get_localization()))
 
+    @app_commands.autocomplete(locale=set_locale_autocomplete)
+    @app_commands.command(description='get_default_events_description')
+    async def get_default_and_translated(self, i: discord.Interaction, locale: str, role: discord.Role = None):
+        user = User(i.user.id, i.guild_id)
+
+        if role:
+            eves = [x for x in events.find({'guild_id': i.guild_id, 'location_id': role.id}).sort('statistical_weight')]
+        else:
+            eves = [x for x in events.find({'guild_id': i.guild_id, 'location_id': role}).sort('statistical_weight')]
+
+        not_chunked_text = ''
+        w = 0
+        for x in eves:
+            if x['location_id']:
+                role = i.guild.get_role(x['location_id']).name
+            else:
+                role = x['location_id']
+            not_chunked_text += f"id={str(x['_id'])}, role={role}, weight={x['statistical_weight']}: " \
+                                f"\n```{x['localized_events'].get('default', x['localized_events']['default'])}```"
+            not_chunked_text += f"```{x['localized_events'].get(locale, x['localized_events']['default'])}``` "
+
+            w += x['statistical_weight']
+        not_chunked_text += f"sum_weight = {w}"
+        chunks = chunker(not_chunked_text)
+        if chunks:
+            for n, x in enumerate(chunks):
+                if n == 0:
+                    await i.response.send_message(x)
+                else:
+                    await i.followup.send(x)
+        else:
+            await i.response.send_message(get_localized_answer('generic_error', user.get_localization()))
+
     @app_commands.command(description='test_event_description')
     async def test_event(self, i: discord.Interaction, event: str, num_of_times: int = 1):
         output_str = ''
@@ -219,6 +252,7 @@ class GM(commands.GroupCog, name="gm"):
         except bson.errors.InvalidId:
             pass
         await i.response.send_message(get_localized_answer('generic_error', user.get_localization()))
+
 
 async def setup(client):
     await client.add_cog(GM(client))

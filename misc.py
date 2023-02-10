@@ -73,15 +73,15 @@ def procces_event(inp_str: str) -> object:
         return exc
 
 
-def chunker(inp_str, chunk_str='\n'):
+def chunker(inp_str, chunk_str='\n', limit=2000):
     chunks = []
     not_chunked_text = inp_str
 
     while not_chunked_text:
-        if len(not_chunked_text) <= 2000:
+        if len(not_chunked_text) <= limit:
             chunks.append(not_chunked_text)
             break
-        split_index = not_chunked_text.rfind(chunk_str, 0, 2000)
+        split_index = not_chunked_text.rfind(chunk_str, 0, limit)
         if split_index == -1:
             # The chunk is too big, so everything until the next newline is deleted
             try:

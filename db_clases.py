@@ -9,6 +9,26 @@ locations = db['locations']
 events = db['events']
 
 
+class Server:
+    def __init__(self, server_id):
+        self.server_id = server_id
+        self.server = self.roc_server()
+
+    def roc_server(self):  # Read or create
+        if server := servers.find_one({'id': self.server_id}):
+            return server
+        else:
+            server.insert_one({
+                'id': self.server,
+                'local': 'ukr',
+                'manual_url': None
+            })
+            return servers.find_one({'id': self.server_id})
+
+    def set_manual_url(self, url: str):
+        servers.find_one_and_update({'id': self.server_id}, {'$set': {'manual_url': url}})
+
+
 class User:
     def __init__(self, user_id, server_id):
         self.user_id = user_id
@@ -19,7 +39,7 @@ class User:
         if user := users.find_one({'id': self.user_id}):
             return user
         else:
-            loc = servers.find_one({'id': self.server_id})['local']
+            loc = Server(self.server_id).roc_server()['local']
             users.insert_one({
                 'id': self.user_id,
                 'local': loc
