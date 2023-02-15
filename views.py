@@ -6,7 +6,6 @@ from misc import chunker, get_localized_answer
 import gspread
 import gspread.utils
 
-
 client = gspread.service_account('credentials.json')
 
 
@@ -63,12 +62,12 @@ class ManualView(View):
     def get_localized_paginated_list(self):
         r, c = gspread.utils.a1_to_rowcol(self.cell_coords['default'])
         r_l, c_l = gspread.utils.a1_to_rowcol(self.cell_coords.get(self.locale, self.cell_coords['default']))
-        r, r_l = r+self.page*self.max_options, r_l+self.page*self.max_options
+        r, r_l = r + self.page * self.max_options, r_l + self.page * self.max_options
 
         data, localized_data = self.sheet.batch_get([f'{gspread.utils.rowcol_to_a1(r, c)}:'
-                                                     f'{gspread.utils.rowcol_to_a1(r + self.max_options-1, c + 1)}',
+                                                     f'{gspread.utils.rowcol_to_a1(r + self.max_options - 1, c + 1)}',
                                                      f'{gspread.utils.rowcol_to_a1(r_l, c_l)}:'
-                                                     f'{gspread.utils.rowcol_to_a1(r_l + self.max_options-1, c_l + 1)}'])
+                                                     f'{gspread.utils.rowcol_to_a1(r_l + self.max_options - 1, c_l + 1)}'])
         if self.locale != 'default' and self.locale in self.cell_coords.keys():
             localized_data = gspread.utils.fill_gaps(localized_data, len(data), 2)
             for n, (loc_dat, dat) in enumerate(zip(localized_data, data)):
@@ -81,21 +80,23 @@ class ManualView(View):
         emb = discord.Embed()
         for key, _ in self.data:
             if len(key) > 256:
-                key = key[:250]+'...'
+                key = key[:250] + '...'
             emb.add_field(name=key, inline=False, value='')
         return emb
 
     def get_content(self):
         if self.opts > 1:
-            return f'{self.page+1}/{self.opts}'
+            return f'{self.page + 1}/{self.opts}'
         return ''
 
     async def change_page(self, i: Interaction):
+        await i.response.defer(ephemeral=True)
         sel = self.select
         self.remove_item(sel)
         self.select.update_options()
         self.add_item(sel)
-        await i.response.edit_message(content=self.get_content(), embed=self.get_embed(), view=self)
+        msg = await i.original_response()
+        await msg.edit(content=self.get_content(), embed=self.get_embed(), view=self)
 
 
 class PaginatedBackView(View):
@@ -111,8 +112,8 @@ class PaginatedBackView(View):
         self.chunked = chunker(value, '\n', 4096)
         self.add_item(BackBTN(get_localized_answer('back_btn_label', original_view.locale)))
         if len(self.chunked) > 1:
-            self.add_item(PageChangeBTN(-1, len(self.chunked)-1, '<'))
-            self.add_item(PageChangeBTN(1, len(self.chunked)-1, '>'))
+            self.add_item(PageChangeBTN(-1, len(self.chunked) - 1, '<'))
+            self.add_item(PageChangeBTN(1, len(self.chunked) - 1, '>'))
 
     def get_embed(self):
         new_emb = discord.Embed(title=self.key, description='')
@@ -122,8 +123,9 @@ class PaginatedBackView(View):
             if self.chunked[self.page].count(key_for_image) >= 1 and self.chunked[self.page].count('}') >= 1:
                 first_keyword = self.chunked[self.page].index(key_for_image)
                 second_keyword = self.chunked[self.page].index('}')
-                url = self.chunked[self.page][first_keyword+len(key_for_image):second_keyword]
-                self.chunked[self.page] = self.chunked[self.page][:first_keyword] + self.chunked[self.page][second_keyword+1:]
+                url = self.chunked[self.page][first_keyword + len(key_for_image):second_keyword]
+                self.chunked[self.page] = self.chunked[self.page][:first_keyword] + self.chunked[self.page][
+                                                                                    second_keyword + 1:]
                 images.append(url)
         if images:
             new_emb.set_image(url=images.pop(0))
@@ -134,7 +136,7 @@ class PaginatedBackView(View):
 
     def get_content(self):
         if len(self.chunked) > 1:
-            return f'{self.page+1}/{len(self.chunked)}'
+            return f'{self.page + 1}/{len(self.chunked)}'
         return ''
 
     async def change_page(self, interaction: Interaction):
@@ -148,9 +150,11 @@ class BackBTN(Button):
         super().__init__(label=label)
 
     async def callback(self, i: Interaction):
-        await i.response.edit_message(content=self.view.original_view.get_content(),
-                                      embed=self.view.original_view.get_embed(),
-                                      view=self.view.original_view)
+        await i.response.defer(ephemeral=True)
+        msg = await i.original_response()
+        await msg.edit(content=self.view.original_view.get_content(),
+                       embed=self.view.original_view.get_embed(),
+                       view=self.view.original_view)
 
 
 class PageChangeBTN(Button):
