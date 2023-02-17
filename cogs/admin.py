@@ -32,7 +32,8 @@ class Admin(commands.GroupCog, name="admin"):
     @app_commands.command(description='votum_description')
     async def votum(self, i: Interaction, text: str, seconds: int, minutes: int = 0, hours: int = 0, days: int = 0):
         v = VotumView(text,
-                      datetime.timedelta(seconds=seconds, minutes=minutes, hours=hours, days=days).total_seconds(), i)
+                      datetime.timedelta(seconds=seconds, minutes=minutes, hours=hours, days=days).total_seconds(), i,
+                      self.client)
         await i.response.send_message(content=v.get_str(), view=v)
 
 
@@ -63,11 +64,11 @@ class StartTimeButton(Button):
     async def callback(self, interaction: Interaction):
         self.view.remove_item(self)
         await interaction.response.edit_message(view=self.view)
-        await self.view.closer(await interaction.original_response())
+        await self.view.closer(interaction.channel_id, interaction.message.id)
 
 
 class VotumView(View):
-    def __init__(self, text, timer, interaction: Interaction):
+    def __init__(self, text, timer, interaction: Interaction, client: discord.Client):
         self.user = User(interaction.user.id, interaction.guild_id)
         super(VotumView, self).__init__(timeout=None)
         self.text = text
@@ -76,25 +77,24 @@ class VotumView(View):
         self.add_item(VoteButton('', discord.ButtonStyle.green, True, '✔'))
         self.add_item(VoteButton('', discord.ButtonStyle.red, False, '✖'))
         self.timer = timer
-        self.interaction = interaction
         self.add_item(StartTimeButton(get_localized_answer('start_timer', self.user.get_localization()), discord.ButtonStyle.blurple))
         self.yay = get_localized_answer('yay', self.user.get_localization())
         self.nay = get_localized_answer('nay', self.user.get_localization())
+        self.client = client
 
     def get_str(self):
         return f"{self.text}\n\n{self.yay} - {self.votes_yes} | {self.nay} - {self.votes_no}"
 
-    async def closer(self, interaction: discord.InteractionMessage):
+    async def closer(self, channel_id, message_id):
         await asyncio.sleep(self.timer)
-        await interaction.edit(view=None)
+        msg: discord.Message = await self.client.get_channel(channel_id).fetch_message(message_id)
+        await msg.edit(view=None)
         voters = ''
         for voter in self.voters:
-            voters += interaction.guild.get_member(voter).mention + '\n'
+            voters += msg.guild.get_member(voter).mention + '\n'
         chunks = chunker(f'{get_localized_answer("votum_closed", self.user.get_localization()).format(num_of_users=len(self.voters))}\n {voters}')
         for chunk in chunks:
-            await interaction.reply(content=chunk)
-
-
+            await msg.reply(content=chunk)
 
 
 async def setup(client):
