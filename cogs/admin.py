@@ -63,7 +63,7 @@ class StartTimeButton(Button):
     async def callback(self, interaction: Interaction):
         self.view.remove_item(self)
         await interaction.response.edit_message(view=self.view)
-        await self.view.closer()
+        await self.view.closer(await interaction.original_response())
 
 
 class VotumView(View):
@@ -84,15 +84,17 @@ class VotumView(View):
     def get_str(self):
         return f"{self.text}\n\n{self.yay} - {self.votes_yes} | {self.nay} - {self.votes_no}"
 
-    async def closer(self):
+    async def closer(self, interaction: discord.InteractionMessage):
         await asyncio.sleep(self.timer)
-        await self.interaction.edit_original_response(view=None)
+        await interaction.edit(view=None)
         voters = ''
         for voter in self.voters:
-            voters += self.interaction.guild.get_member(voter).mention + '\n'
+            voters += interaction.guild.get_member(voter).mention + '\n'
         chunks = chunker(f'{get_localized_answer("votum_closed", self.user.get_localization()).format(num_of_users=len(self.voters))}\n {voters}')
         for chunk in chunks:
-            await self.interaction.followup.send(content=chunk)
+            await interaction.reply(content=chunk)
+
+
 
 
 async def setup(client):
