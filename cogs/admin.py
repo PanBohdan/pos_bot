@@ -20,7 +20,7 @@ events = db['events']
 
 class Admin(commands.GroupCog, name="admin"):
     def __init__(self, client):
-        self.client = client
+        self.client: discord.Client = client
         super().__init__()
 
     @app_commands.command(description='set_manual_url_description')
@@ -31,22 +31,24 @@ class Admin(commands.GroupCog, name="admin"):
 
     @app_commands.command(description='votum_description')
     async def votum(self, i: Interaction, text: str, seconds: int, minutes: int = 0, hours: int = 0, days: int = 0):
+        await i.response.defer()
         v = VotumView(text,
-                      datetime.timedelta(seconds=seconds, minutes=minutes, hours=hours, days=days).total_seconds(), i,
-                      self.client)
-        await i.response.send_message(content=v.get_str(), view=v)
+                      datetime.timedelta(seconds=seconds, minutes=minutes, hours=hours, days=days).total_seconds(),
+                      i.user.id, i.guild.id)
+        await i.followup.send(content=v.get_str(), view=v)
 
 
 class VoteButton(Button):
     def __init__(self, label, style, vote_yes, emoji=''):
-        super(VoteButton, self).__init__(style=style, label=label, emoji=emoji)
+        super().__init__(style=style, label=label, emoji=emoji)
         self.vote_yes = vote_yes
 
     async def callback(self, interaction: Interaction):
         user = User(interaction.user.id, interaction.guild.id)
+        localization = user.get_localization()
         if interaction.user.id in self.view.voters:
-            await interaction.response.send_message(content=get_localized_answer('vote_error', user.get_localization()), ephemeral=True)
-            return
+            await interaction.response.send_message(content=get_localized_answer('vote_error', localization),
+                                                    ephemeral=True)
         else:
             if self.vote_yes:
                 self.view.votes_yes += 1
@@ -54,12 +56,13 @@ class VoteButton(Button):
                 self.view.votes_no += 1
             self.view.voters.append(interaction.user.id)
             await interaction.response.edit_message(content=self.view.get_str())
-            await interaction.followup.send(content=get_localized_answer('vote_counted', user.get_localization()), ephemeral=True)
+            await interaction.followup.send(content=get_localized_answer('vote_counted', localization),
+                                            ephemeral=True)
 
 
 class StartTimeButton(Button):
     def __init__(self, label, style):
-        super(StartTimeButton, self).__init__(style=style, label=label)
+        super().__init__(style=style, label=label)
 
     async def callback(self, interaction: Interaction):
         self.view.remove_item(self)
@@ -68,9 +71,10 @@ class StartTimeButton(Button):
 
 
 class VotumView(View):
-    def __init__(self, text, timer, interaction: Interaction, client: discord.Client):
-        self.user = User(interaction.user.id, interaction.guild_id)
-        super(VotumView, self).__init__(timeout=None)
+    def __init__(self, text, timer, user_id, server_id, client: discord.Client= None):
+        super().__init__(timeout=None)
+        self.user = User(user_id, server_id)
+        self.localization = self.user.get_localization()
         self.text = text
         self.votes_yes, self.votes_no = 0, 0
         self.voters = []
@@ -78,8 +82,8 @@ class VotumView(View):
         self.add_item(VoteButton('', discord.ButtonStyle.red, False, '✖'))
         self.timer = timer
         self.add_item(StartTimeButton(get_localized_answer('start_timer', self.user.get_localization()), discord.ButtonStyle.blurple))
-        self.yay = get_localized_answer('yay', self.user.get_localization())
-        self.nay = get_localized_answer('nay', self.user.get_localization())
+        self.yay = get_localized_answer('yay', self.localization)
+        self.nay = get_localized_answer('nay', self.localization)
         self.client = client
 
     def get_str(self):
@@ -92,7 +96,7 @@ class VotumView(View):
         voters = ''
         for voter in self.voters:
             voters += msg.guild.get_member(voter).mention + '\n'
-        chunks = chunker(f'{get_localized_answer("votum_closed", self.user.get_localization()).format(num_of_users=len(self.voters))}\n {voters}')
+        chunks = chunker(f'{get_localized_answer("votum_closed", self.localization).format(num_of_users=len(self.voters))}\n {voters}')
         for chunk in chunks:
             await msg.reply(content=chunk)
 
