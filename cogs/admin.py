@@ -34,7 +34,7 @@ class Admin(commands.GroupCog, name="admin"):
         await i.response.defer()
         v = VotumView(text,
                       datetime.timedelta(seconds=seconds, minutes=minutes, hours=hours, days=days).total_seconds(),
-                      i.user.id, i.guild.id)
+                      i.user.id, i.guild.id, self.client)
         await i.followup.send(content=v.get_str(), view=v)
 
 
