@@ -5,17 +5,9 @@ import discord.ext.commands
 from discord.ext import commands
 from discord import app_commands, Interaction
 from discord.ui import View, Button
-from pymongo import MongoClient
-import os
 from db_clases import User, Server
 from misc import get_localized_answer, chunker
-
-m_client = MongoClient(os.environ.get('DB'))
-db = m_client['pos_db']
-users = db['users']
-servers = db['servers']
-languages = db['languages']
-events = db['events']
+import io
 
 
 class Admin(commands.GroupCog, name="admin"):
@@ -30,11 +22,11 @@ class Admin(commands.GroupCog, name="admin"):
         await i.response.send_message(content=get_localized_answer('set_manual_url', user.get_localization()))
 
     @app_commands.command(description='votum_description')
-    async def votum(self, i: Interaction, text: str, seconds: int, minutes: int = 0, hours: int = 0, days: int = 0):
+    async def votum(self, i: Interaction, text: str, ping: bool, seconds: int, minutes: int = 0, hours: int = 0, days: int = 0):
         await i.response.defer()
         v = VotumView(text,
                       datetime.timedelta(seconds=seconds, minutes=minutes, hours=hours, days=days).total_seconds(),
-                      i.user.id, i.guild.id, self.client)
+                      i.user.id, i.guild.id, self.client, ping)
         await i.followup.send(content=v.get_str(), view=v)
 
 
@@ -71,11 +63,12 @@ class StartTimeButton(Button):
 
 
 class VotumView(View):
-    def __init__(self, text, timer, user_id, server_id, client: discord.Client= None):
+    def __init__(self, text, timer, user_id, server_id, client: discord.Client, ping):
         super().__init__(timeout=None)
         self.user = User(user_id, server_id)
         self.localization = self.user.get_localization()
         self.text = text
+        self.ping = ping
         self.votes_yes, self.votes_no = 0, 0
         self.voters = []
         self.add_item(VoteButton('', discord.ButtonStyle.green, True, '✔'))
@@ -93,12 +86,23 @@ class VotumView(View):
         await asyncio.sleep(self.timer)
         msg: discord.Message = await self.client.get_channel(channel_id).fetch_message(message_id)
         await msg.edit(view=None)
-        voters = ''
-        for voter in self.voters:
-            voters += msg.guild.get_member(voter).mention + '\n'
-        chunks = chunker(f'{get_localized_answer("votum_closed", self.localization).format(num_of_users=len(self.voters))}\n {voters}')
-        for chunk in chunks:
-            await msg.reply(content=chunk)
+        if self.ping:
+            voters = ''
+            for voter in self.voters:
+                voters += msg.guild.get_member(voter).mention + '\n'
+            chunks = chunker(
+                f'{get_localized_answer("votum_closed", self.localization).format(num_of_users=len(self.voters))}\n {voters}')
+            for chunk in chunks:
+                await msg.reply(content=chunk)
+
+        else:
+            voters = ''
+            for voter in self.voters:
+                voters += str(msg.guild.get_member(voter)) + '\n'
+
+            with io.StringIO(voters) as string_buffer:
+                await msg.reply(content=f'{get_localized_answer("votum_closed", self.localization).format(num_of_users=len(self.voters))}',
+                                file=discord.File(string_buffer, filename='votes.txt'))
 
 
 async def setup(client):
